@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Conhecimento Plus - Administrador</title>
+    <link href="../dist/css/tabler.min.css" rel="stylesheet" />
+    <link href="../dist/css/tabler-flags.min.css" rel="stylesheet" />
+    <link href="../dist/css/tabler-payments.min.css" rel="stylesheet" />
+    <link href="../dist/css/tabler-vendors.min.css" rel="stylesheet" />
+    <link href="../dist/css/demo.min.css" rel="stylesheet" />
+    <script src="../dist/js/tabler.min.js"></script>
+    <script src="../dist/js/demo.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.js"
+        integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
+</head>
+<script type="text/javascript">
+    deletarUsuario = function (idUsuario) {
+        //criar uma validação de exclusão de usuário
+        var mdl = document.getElementById('delete');
+        if (mdl) mdl.remove();
+        var modal = '<div class="modal modal-blur fade" id="delete" role="dialog"><div class="modal-dialog modal-sm modal-dialog-centered" role="document"><div class="modal-content">'
+            + '<div class="modal-body"><div class="modal-title">Apagar usuário?</div><div>Os dados não serão recuperados.</div></div><div class="modal-footer">'
+            + '<button type="button" class="btn btn-link link-secondary me-auto" data-bs-dismiss="modal">Cancelar</button>'
+            + '<button type="button" class="btn btn-danger" data-bs-dismiss="modal" onClick="confirmarDelecao(' + idUsuario + ')">Apagar</button></div></div></div></div>';
+        $('body').append(modal);
+        $('#delete').modal('show');
+    };
+
+    confirmarDelecao = function (idUsuario) {
+        fetch('https://localhost:7241/api/Users/' + idUsuario, {
+            method: "DELETE",
+            headers: new Headers({
+                'content-type': 'application/json'
+            }, {
+                'accept': ' application/json'
+            })
+        }).then(async (response) => {
+            $('#modal-success-delete').modal('show');
+            carregarUsuarios();
+        }).catch(err => {
+
+        })
+    };
+
+    carregarUsuarios = function () {
+        fetch('https://localhost:7241/api/Users', {
+            method: "GET",
+            headers: new Headers({
+                'content-type': 'application/json'
+            }, {
+                'accept': ' application/json'
+            })
+        }).then(async (response) => {
+            const data = await response.json()
+            if (response.ok) {
+                var body = $("tbody");
+                body.empty();
+                data.forEach(d => {
+                    var html = '<tr><td ><div class="d-flex py-1 align-items-center">' + '<span class="avatar me-2" style="background-image: url(' + d.imagem + ')"></span>'
+                        + '<div class="flex-fill"><div class="font-weight-medium">' + d.nome + '</div><div class="text-muted"><a href="#" class="text-reset">' + d.email + '</a></div>'
+                        + '</div></div></td><td ><div>' + d.cargo + '</div><div class="text-muted">' + d.empresa + '</div>'
+                        + '</td><td class="text-muted" >' + (d.tipo == 1 ? 'Admin' : 'Usuário') + '</td>'
+                        + `<td><a href="#" onclick="editarUsuario('${encodeURIComponent(JSON.stringify(d))}')">Editar</a>   <a href="#" onclick="deletarUsuario(${d.id})">Excluir</a></td></tr>`;
+                    body.append(html);
+                })
+            } else {
+                alert(data.detail)
+            }
+        }).catch(err => {
+
+        })
+    };
+
+    editarUsuario = function (usuario) {
+        usuario = JSON.parse(decodeURIComponent(usuario));
+        $('#modal-new-user').modal('show');
+        document.getElementById("senha").disabled = true;
+        document.getElementById("btnUser").innerHTML = "Editar Usuário";
+        document.getElementById("frmNome").style.marginTop = "0px";
+        document.getElementById("idfrm").style.visibility = "visible";
+        document.getElementById("id").value = usuario.id;
+        document.getElementById("nome").value = usuario.nome;
+        document.getElementById("email").value = usuario.email;
+        document.getElementById("cpf").value = usuario.cpf;
+        document.getElementById("usuario").value = usuario.usuario;
+        document.getElementById("empresa").value = usuario.empresa;
+        document.getElementById("cargo").value = usuario.cargo;
+        document.getElementById("imagem").value = usuario.imagem;
+
+        if (usuario.tipo === 1) {
+            document.getElementById("admin").checked = true;
+        } else document.getElementById("user").checked = true;
+
+    }
+
+    limparCampos = function () {
+        document.getElementById("btnUser").innerHTML = "Criar Usuário";
+        document.getElementById("idfrm").style.visibility = "hidden";
+        document.getElementById("frmNome").style.marginTop = "-85px";
+        document.getElementById("nome").value = '';
+        document.getElementById("email").value = '';
+        document.getElementById("cpf").value = '';
+        document.getElementById("senha").value = '';
+        document.getElementById("senha").disabled = false;
+        document.getElementById("usuario").value = '';
+        document.getElementById("empresa").value = '';
+        document.getElementById("cargo").value = '';
+        document.getElementById("admin").value = '';
+        document.getElementById("imagem").value = '';
+
+    };
+
+    criarUsuario = function () {
+        var nome = document.getElementById("nome").value;
+        var email = document.getElementById("email").value;
+        var cpf = document.getElementById("cpf").value;
+        var senha = document.getElementById("senha").value;
+        var usuario = document.getElementById("usuario").value;
+        var empresa = document.getElementById("empresa").value;
+        var cargo = document.getElementById("cargo").value;
+        var admin = document.getElementById("admin").value;
+        var imagem = document.getElementById("imagem").value;
+
+        var id = document.getElementById("id").value;
+        var objlogin = {
+            "nome": nome,
+            "email": email,
+            "cpf": cpf,
+            "senha": senha,
+            "usuario": usuario,
+            "ativo": 0,
+            "tipo": admin ? 1 : 2,
+            "imagem": imagem,
+            "empresa": empresa,
+            "cargo": cargo
+        }
+
+        if (id && id != '') {
+            delete objlogin.senha;
+            objlogin.id = id;
+            fetch('https://localhost:7241/api/Users/' + id, {
+                method: "PUT",
+                body: JSON.stringify(objlogin),
+                headers: new Headers({ 'content-type': 'application/json' }, { 'accept': ' application/json' })
+            }).then(async (response) => {
+                $('#modal-success-edit').modal('show');
+                limparCampos();
+                carregarUsuarios();
+            }).catch(err => {
+
+            })
+
+        } else {
+            fetch('https://localhost:7241/api/Users', {
+                method: "POST",
+                body: JSON.stringify(objlogin),
+                headers: new Headers({ 'content-type': 'application/json' }, { 'accept': ' application/json' })
+            }).then(async (response) => {
+                const data = await response.json()
+                if (response.ok) {
+                    $('#modal-success-create').modal('show');
+                    limparCampos();
+                    carregarUsuarios();
+                } else {
+                    alert(data.detail)
+                }
+            }).catch(err => {
+
+            })
+        }
+
+
+    };
+
+    $(document).ready(function () {
+        var usuario = JSON.parse(localStorage.getItem('usuarioLogado'));
+        setUserData(usuario);
+        criaMenu(usuario);
+        carregarUsuarios();
+    })
+    setUserData = function (usuario) {
+        document.getElementById('imgUsuario').style = 'background-image: url(' + usuario.imagem + ')'
+        document.getElementById('nomeUsuario').innerText = usuario.nome;
+        document.getElementById('cargoUsuario').innerText = usuario.cargo;
+    }
+
+    function criaMenu(usuario) {
+        fetch('https://localhost:7241/api/Conhecimentoes/GetCategories', {
+            method: "GET",
+            headers: new Headers({
+                'content-type': 'application/json'
+            }, {
+                'accept': ' application/json'
+            })
+        }).then(async (response) => {
+            const data = await response.json()
+            if (response.ok) {
+                montaMenu(usuario, data)
+            } else {
+                alert(data.detail)
+            }
+        }).catch(err => {
+
+        })
+
+    }
+
+    function montaMenu(usuario, categorias) {
+        var menu = document.getElementById('menuadm');
+        if (usuario.tipo == 1) {
+            menu.style.visibility = "visible";
+        } else menu.style.visibility = "hidden";
+
+        var menuLateral = document.getElementById('menuLateral');
+
+        categorias.forEach(cat => {
+            var html = '<a class="dropdown-item" href="../basedados.html?cat=' + cat + '">' + cat + '</a>';
+            menuLateral.innerHTML += html;
+        });
+    }
+
+    function logoff() {
+
+        localStorage.setItem('usuarioLogado', {});
+        location.href = "../login.html"
+    }
+
+</script>
+
+<body>
+    <!-- MENU LATERAL -->
+    <div class="wrapper">
+        <aside class="navbar navbar-vertical navbar-expand-lg navbar-dark">
+            <div class="container-fluid">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <h1 class="navbar-brand navbar-brand-autodark">
+                    <a href=".">
+                            <class="navbar-brand-image">
+                            <img src="../img/viver bem - original.png" width="90" height="100" alt="Image">
+                        <!-- LOGO EMPRESA-->
+                    </a>
+                </h1>
+                <div class="collapse navbar-collapse" id="navbar-menu">
+                    <ul class="navbar-nav pt-lg-3">
+                        <li class="nav-item">
+                            <a class="nav-link" href="../home.html">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
+                                              stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                              <polyline points="5 12 3 12 12 3 21 12 19 12" />
+                                              <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+                                              <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+                                            </svg>
+                                          </span>
+                                    </span>
+                                </span>
+                                <span class="nav-link-title">
+                                    Inicio
+                                </span>
+                            </a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#navbar-base" data-bs-toggle="dropdown"
+                                data-bs-auto-close="false" role="button" aria-expanded="false">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
+                                          stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                          <polyline points="12 3 20 7.5 20 16.5 12 21 4 16.5 4 7.5 12 3" />
+                                          <line x1="12" y1="12" x2="20" y2="7.5" />
+                                          <line x1="12" y1="12" x2="12" y2="21" />
+                                          <line x1="12" y1="12" x2="4" y2="7.5" />
+                                          <line x1="16" y1="5.25" x2="8" y2="9.75" />
+                                        </svg>
+                                      </span>
+                                </span>
+                                <span class="nav-link-title">
+                                    Conhecimentos
+                                </span>
+                            </a>
+                            <div class="dropdown-menu">
+                                <div class="dropdown-menu-columns">
+                                    <div class="dropdown-menu-column" id="menuLateral">
+
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                        <li class="nav-item dropdown" style='visibility:hidden' id="menuadm">
+                            <a class="nav-link dropdown-toggle" href="#navbar-base" data-bs-toggle="dropdown"
+                                data-bs-auto-close="false" role="button" aria-expanded="false">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
+                                          stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                          <polyline points="12 3 20 7.5 20 16.5 12 21 4 16.5 4 7.5 12 3" />
+                                          <line x1="12" y1="12" x2="20" y2="7.5" />
+                                          <line x1="12" y1="12" x2="12" y2="21" />
+                                          <line x1="12" y1="12" x2="4" y2="7.5" />
+                                          <line x1="16" y1="5.25" x2="8" y2="9.75" />
+                                        </svg>
+                                      </span>
+                                </span>
+                                <span class="nav-link-title">
+                                    Gerenciar
+                                </span>
+                            </a>
+                            <div class="dropdown-menu">
+                                <div class="dropdown-menu-columns">
+                                    <div class="dropdown-menu-column">
+                                        <a class="dropdown-item" href="./usermanager.html">
+                                            Gerenciar Usuários
+                                        </a>
+                                        <a class="dropdown-item" href="./basemanager.html">
+                                            Gerenciar Base
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+
+                    </ul>
+                </div>
+            </div>
+        </aside>
+        <!-- CABEÇALHO -->
+        <header class="navbar navbar-expand-md navbar-light d-none d-lg-flex d-print-none">
+            <div class="container-xl">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-nav flex-row order-md-last">
+                    <a href="?theme=dark" class="nav-link px-0 hide-theme-dark" title="Ativar Modo Escuro"
+                        data-bs-toggle="tooltip" data-bs-placement="bottom">
+                    </a>
+                    <a href="?theme=light" class="nav-link px-0 hide-theme-light" title="Ativar Modo Claro"
+                        data-bs-toggle="tooltip" data-bs-placement="bottom">
+                    </a>
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown"
+                            aria-label="Open user menu">
+                            <span class="avatar avatar-sm" id="imgUsuario"
+                                style="background-image: url(./static/avatars/000m.jpg)"></span>
+                            <!-- imagem usuario-->
+                            <div class="d-none d-xl-block ps-2">
+                                <div id="nomeUsuario">Usuario</div><!-- nome usuario-->
+                                <div id="cargoUsuario" class="mt-1 small text-muted">Cargo</div> <!-- cargo / empresa-->
+                            </div>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                            <a href="#" onclick="logoff()" class="dropdown-item">Sair</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="collapse navbar-collapse" id="navbar-menu">
+                </div>
+            </div>
+        </header>
+        <!-- PÁGINA -->
+        <div class="page-wrapper">
+            <div class="container-xl">
+                <div class="page-header d-print-none">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h2 class="page-title"> Gerenciar Usuários </h2>
+                        </div>
+                        <div class="col-auto ms-auto d-print-none">
+                            <div class="btn-list">
+                                <a onclick="limparCampos()" href="#" class="btn btn-primary d-none d-sm-inline-block"
+                                    data-bs-toggle="modal" data-bs-target="#modal-new-user"> Cadastrar Novo Usuário </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="page-body">
+                <!-- CONTEUDO DA PÁGINA -->
+                <div class="container-xl">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="table-responsive">
+                                <table class="table table-vcenter card-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Nome</th>
+                                            <th>Cargo</th>
+                                            <th>Tipo de Usuário</th>
+                                            <th class="w-1"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <footer class="footer footer-transparent d-print-none">
+                    <div class="container-xl">
+                        <div class="row text-center align-items-center flex-row-reverse">
+                            <div class="col-12 col-lg-auto mt-3 mt-lg-0">
+                                <ul class="list-inline list-inline-dots mb-0">
+                                    <li class="list-inline-item"> Copyright &copy; 2022 <a href="."
+                                            class="link-secondary">Conhecimento
+                                            Plus</a>. Todos os direitos reservados. </li>
+                                    <li class="list-inline-item">
+                                        <a href="./changelog.html" class="link-secondary" rel="noopener"> v1.0.0-beta1
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </div>
+        <div class="modal modal-blur fade" id="modal-success-delete" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <div class="modal-status bg-success"></div>
+                    <div class="modal-body text-center py-4">
+                        <h3>Usuário deletado com sucesso!</h3>
+                    </div>
+                    <div class="modal-footer">
+                        <div class="w-100">
+                            <div class="row">
+                                <div class="col">
+                                    <a href="#" class="btn btn-success w-100" data-bs-dismiss="modal"> Ok </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal modal-blur fade" id="modal-success-create" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <div class="modal-status bg-success"></div>
+                    <div class="modal-body text-center py-4">
+                        <h3>Usuário criado com sucesso!</h3>
+                    </div>
+                    <div class="modal-footer">
+                        <div class="w-100">
+                            <div class="row">
+                                <div class="col">
+                                    <a href="#" class="btn btn-success w-100" data-bs-dismiss="modal"> Ok </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal modal-blur fade" id="modal-success-edit" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <div class="modal-status bg-success"></div>
+                    <div class="modal-body text-center py-4">
+                        <h3>Usuário editado com sucesso!</h3>
+                    </div>
+                    <div class="modal-footer">
+                        <div class="w-100">
+                            <div class="row">
+                                <div class="col">
+                                    <a href="#" class="btn btn-success w-100" data-bs-dismiss="modal"> Ok </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal modal-blur fade" id="modal-new-user" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Novo Usuário</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3" id="idfrm" style="visibility: collapse;">
+                            <label class="form-label">Id</label>
+                            <input type="text" class="form-control" id="id" disabled>
+                        </div>
+                        <div class="mb-3" id="frmNome">
+                            <label class="form-label">Nome</label>
+                            <input type="text" class="form-control" id="nome" placeholder="Digite o Nome Completo">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">E-mail</label>
+                            <input type="text" class="form-control" id="email" placeholder="Digite o E-mail">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">CPF</label>
+                            <input type="text" class="form-control" id="cpf" placeholder="Digite o CPF">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Usuário</label>
+                            <input type="text" class="form-control" id="usuario" placeholder="Digite o Usuário">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Senha</label>
+                            <input type="text" class="form-control" id="senha" placeholder="Crie uma Senha">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Cargo</label>
+                            <input type="text" class="form-control" id="cargo" placeholder="Digite o Cargo">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nome da Empresa</label>
+                            <input type="text" class="form-control" id="empresa" placeholder="Digite o Nome da Empresa">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Imagem</label>
+                            <input type="text" class="form-control" id="imagem" placeholder="Insere ima imagem">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Tipo de Usuário</label>
+                        </div>
+                        <div class="form-selectgroup-boxes row mb-3">
+                            <div class="col-lg-6">
+                                <label class="form-selectgroup-item">
+                                    <input type="radio" name="report-type" value="1" id="admin"
+                                        class="form-selectgroup-input" checked>
+                                    <span class="form-selectgroup-label d-flex align-items-center p-3">
+                                        <span class="me-3">
+                                            <span class="form-selectgroup-check"></span>
+                                        </span>
+                                        <span class="form-selectgroup-label-content">
+                                            <span class="form-selectgroup-title strong mb-1">Administrador</span>
+                                        </span>
+                                    </span>
+                                </label>
+                            </div>
+                            <div class="col-lg-6">
+                                <label class="form-selectgroup-item">
+                                    <input type="radio" name="report-type" id="user" value="1"
+                                        class="form-selectgroup-input">
+                                    <span class="form-selectgroup-label d-flex align-items-center p-3">
+                                        <span class="me-3">
+                                            <span class="form-selectgroup-check"></span>
+                                        </span>
+                                        <span class="form-selectgroup-label-content">
+                                            <span class="form-selectgroup-title strong mb-1">Usuário</span>
+                                        </span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="#" class="btn btn-link link-secondary" data-bs-dismiss="modal"> Cancelar </a>
+                        <a href="#" onclick="criarUsuario()" id="btnUser" class="btn btn-primary ms-auto"
+                            data-bs-dismiss="modal"> Criar Usuário </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
